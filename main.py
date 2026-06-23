@@ -151,7 +151,7 @@ async def generate_management_report(credentials: HTTPAuthorizationCredentials =
     try:
         logger.info("Running management report pipeline...")
         result = run_pipeline()
-        logger.info(f"Management report completed: {result.get('status')}")
+        logger.info(f"Management report completed: {result}")
         return result
     except Exception as e:
         logger.error(f"Error running management report: {e}")

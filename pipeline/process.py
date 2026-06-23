@@ -1,5 +1,6 @@
 import asyncio
 import logging, os
+import re
 
 from logic.db import Database
 from logic.message_handler import send_message
@@ -26,6 +27,11 @@ db = Database()
 _conversation_state: dict[str, dict] = {}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _is_valid_email(email: str) -> bool:
+    """Validate email format using regex."""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email.strip()) is not None
 
 def _build_triage_context(phone: str, triage: dict) -> dict:
     """Merge accumulated triage data across multiple messages."""
@@ -232,6 +238,16 @@ async def _handle_email_reply(phone: str, email: str, state: dict):
     email         = email.strip()
 
     logger.info(f"Email reply from {phone} for complaint {complaint_id}: {email}")
+
+    # Validate email format
+    if not _is_valid_email(email):
+        logger.warning(f"Invalid email format from {phone}: {email}")
+        await send_message(
+            to=phone,
+            text="That doesn't look like a valid email address. Please provide a valid email (e.g., example@email.com)."
+        )
+        # Keep the conversation state so we're still waiting for email
+        return
 
     result = execute_email_tool("send_certificate_email", {
         "recipient_email":    email,

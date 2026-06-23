@@ -50,3 +50,6 @@ def run_report_agent(message: str) -> dict:
         return {
             "summary": "Sorry, I encountered an error while generating the report."
         }
+
+    return result
+
