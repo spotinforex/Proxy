@@ -95,7 +95,7 @@ async def webhook(request: Request, credentials: HTTPAuthorizationCredentials = 
         if existing and not existing.done():
             existing.cancel()
 
-        task = asyncio.create_task(debounce_pipeline(sender, data))
+        task = asyncio.create_task(debounce_pipeline(sender))
         _debounce_timers[sender] = task
         task.add_done_callback(
         lambda t: logger.error(f"Pipeline failed for {sender}: {t.exception()}")
