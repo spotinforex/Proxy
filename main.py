@@ -15,7 +15,10 @@ from fastapi.websockets import WebSocket, WebSocketDisconnect
 from logic.websocket import ConnectionManager
 from utils.is_duplicate import is_duplicate, DEDUP_TTL, _seen_ids
 from pipeline.process import debounce_pipeline, _debounce_timers, _message_buffers
+from pipeline.run_agent_process import run_pipeline, run_pipeline_with_filter, fetch_data_feed
 from logic.processor import complaint_processor
+from pydantic import BaseModel
+from typing import Optional
 
 load_dotenv()
 
@@ -37,6 +40,11 @@ app.add_middleware(
 bearer_scheme = HTTPBearer(auto_error=False)
 
 manager = ConnectionManager()
+
+
+class PipelineFilterRequest(BaseModel):
+    complaint_type: Optional[str] = None
+    status: Optional[str] = None
 
 
 @app.websocket("/ws")
@@ -111,3 +119,63 @@ async def webhook(request: Request, credentials: HTTPAuthorizationCredentials = 
 @app.get("/health")
 async def health():
     return {"status": "Proxy is running"}
+
+
+@app.get("/api/pipeline/data")
+async def get_pipeline_data(credentials: HTTPAuthorizationCredentials = Security(verify_token)):
+    """
+    Fetch all complaints and actions from past month without running through agent.
+    """
+    try:
+        logger.info("Fetching pipeline data feed...")
+        data = fetch_data_feed()
+        return {
+            "status": "success",
+            "complaints_count": len(data.get("complaints", [])),
+            "actions_count": len(data.get("actions", [])),
+            "data": data
+        }
+    except Exception as e:
+        logger.error(f"Error fetching pipeline data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pipeline/report")
+async def generate_management_report(credentials: HTTPAuthorizationCredentials = Security(verify_token)):
+    """
+    Run full management report pipeline:
+    - Fetches all complaints and actions from past month
+    - Processes through report agent
+    - Returns agent analysis and data summary
+    """
+    try:
+        logger.info("Running management report pipeline...")
+        result = run_pipeline()
+        logger.info(f"Management report completed: {result.get('status')}")
+        return result
+    except Exception as e:
+        logger.error(f"Error running management report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pipeline/report/filtered")
+async def generate_filtered_report(
+    request: PipelineFilterRequest,
+    credentials: HTTPAuthorizationCredentials = Security(verify_token)
+):
+    """
+    Run filtered management report pipeline with optional filters:
+    - complaint_type: Filter by specific complaint type
+    - status: Filter by complaint status
+    """
+    try:
+        logger.info(f"Running filtered pipeline (type={request.complaint_type}, status={request.status})...")
+        result = run_pipeline_with_filter(
+            complaint_type=request.complaint_type,
+            status=request.status
+        )
+        logger.info(f"Filtered report completed: {result.get('status')}")
+        return result
+    except Exception as e:
+        logger.error(f"Error running filtered report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

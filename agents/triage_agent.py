@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from pathlib import Path
 
 from openai import OpenAI
 from dotenv import load_dotenv

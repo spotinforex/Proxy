@@ -99,6 +99,36 @@ class Database:
             logging.error(f"Error fetching open complaints: {e}")
             return []
 
+    def get_all_complaints_past_month(self):
+        """Fetch all complaints from the past month for management reporting."""
+        try:
+            self.cursor.execute(
+                """
+                SELECT * FROM complaints
+                WHERE first_response_at >= NOW() - INTERVAL '1 month'
+                ORDER BY first_response_at DESC
+                """
+            )
+            return self.cursor.fetchall()
+        except psycopg2.Error as e:
+            logging.error(f"Error fetching complaints for past month: {e}")
+            return []
+
+    def get_all_actions_past_month(self):
+        """Fetch all actions from the past month for management reporting."""
+        try:
+            self.cursor.execute(
+                """
+                SELECT * FROM actions
+                WHERE taken_at >= NOW() - INTERVAL '1 month'
+                ORDER BY taken_at DESC
+                """
+            )
+            return self.cursor.fetchall()
+        except psycopg2.Error as e:
+            logging.error(f"Error fetching actions for past month: {e}")
+            return []
+
     def resolve_complaint(self, complaint_id: int, resolution_method: str, notes: str = None):
         """Mark a complaint as resolved."""
         try:
