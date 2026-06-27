@@ -17,7 +17,7 @@ client = OpenAI(
     base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 )
 
-SYSTEM_PROMPT = read_file(r"agents\system_prompt\report_system_prompt.txt")
+SYSTEM_PROMPT = read_file(r"agents/system_prompt/report_system_prompt.txt")
 
 def run_report_agent(message: str) -> dict:
     """
