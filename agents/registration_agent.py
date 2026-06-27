@@ -18,7 +18,7 @@ client = OpenAI(
     base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 )
 
-SYSTEM_PROMPT = read_file(r"agents/system_prompt/registration_system_prompt.txt")
+SYSTEM_PROMPT = read_file("agents/system_prompt/registration_system_prompt.txt")
 
 REGISTRATION_TOOLS = [
     {
